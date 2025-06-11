@@ -2,17 +2,23 @@ import db from '../config/db.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
-// Register User
-export const registerUser = (req, res) => {
+// ✅ Register User
+export const registerUser = async (req, res) => {
   const { username, email, password } = req.body;
 
-  const hashedPassword = bcrypt.hashSync(password, 10);
+  try {
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-  const sql = 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)';
-  db.query(sql, [username, email, hashedPassword], (err, result) => {
-    if (err) return res.status(500).json({ error: 'Database error' });
-    return res.status(201).json({ message: 'User registered successfully' });
-  });
+    const [result] = await db.query(
+      'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
+      [username, email, hashedPassword]
+    );
+
+    res.status(201).json({ message: 'User registered successfully', userId: result.insertId });
+  } catch (error) {
+    console.error('Error registering user:', error.message);
+    res.status(500).json({ error: 'Database error' });
+  }
 };
 
 // Login Controller
@@ -21,7 +27,7 @@ export const loginUser = async (req, res) => {
 
     try {
         // ✅ Fetch user from database
-        const [rows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
+        const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
 
         if (rows.length === 0) {
             return res.status(401).json({ message: 'Invalid email or password' });
