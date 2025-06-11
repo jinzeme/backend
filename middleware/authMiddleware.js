@@ -1,17 +1,23 @@
 import jwt from 'jsonwebtoken';
 
+// ✅ Authentication Middleware
 const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+  const authHeader = req.headers['authorization'];
+  
+  // ✅ Token format: Bearer <token>
+  const token = authHeader && authHeader.split(' ')[1];
 
-    if (!token) return res.status(401).json({ message: 'No token provided' });
+  if (!token) {
+    return res.status(401).json({ message: 'Access denied. No token provided.' });
+  }
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) return res.status(403).json({ message: 'Token is invalid' });
-
-        req.user = user; // ✅ This will now contain { id, username }
-        next();
-    });
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded; // ✅ Attach user info to request
+    next(); // ✅ Proceed to the next middleware or route
+  } catch (err) {
+    return res.status(403).json({ message: 'Invalid or expired token.' });
+  }
 };
 
 export default authenticateToken;
