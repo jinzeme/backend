@@ -32,6 +32,17 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/follows', followRoutes);
 
+// ✅ Test MySQL connection
+db.getConnection()
+  .then((connection) => {
+    console.log('✅ MySQL Connected Successfully');
+    connection.release(); // Release connection to the pool
+  })
+  .catch((err) => {
+    console.error('❌ MySQL Connection Error:', err.message);
+    process.exit(1); // Exit server if DB connection fails
+  });
+
 // ✅ Create HTTP server to integrate with Socket.io
 const httpServer = http.createServer(app);
 
