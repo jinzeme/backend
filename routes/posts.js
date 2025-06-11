@@ -1,9 +1,10 @@
 import express from 'express';
-import { getFeedPosts, createPost } from '../controllers/postsController.js';
+import { getFeedPosts, createPost } from '../controllers/postController.js';
 import authenticateToken from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
+// ✅ Protect these routes
 router.get('/feed', authenticateToken, getFeedPosts);
 router.post('/', authenticateToken, createPost);
 
