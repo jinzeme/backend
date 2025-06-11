@@ -23,15 +23,6 @@ app.use(express.json());
 app.use(helmet());
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
 
-// SSL Certificate Files
-const httpsOptions = {
-  key: fs.readFileSync('C:/server1/htdocs/jinze/certs/localhost.key'),
-  cert: fs.readFileSync('C:/server1/htdocs/jinze/certs/localhost.crt')
-};
-
-// Create HTTPS Server
-const server = https.createServer(httpsOptions, app);
-
 // Initialize Socket.io
 const io = new Server(server, {
   cors: {
