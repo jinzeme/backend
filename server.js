@@ -12,7 +12,7 @@ import userRoutes from './routes/users.js';
 import messageRoutes from './routes/messages.js';
 import postRoutes from './routes/posts.js';
 import followRoutes from './routes/follows.js';
-import connectDB from './config/db.js';
+import db from './config/db.js';
 
 dotenv.config();
 
@@ -21,9 +21,6 @@ app.use(cors());
 app.use(express.json());
 app.use(helmet());
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
-
-// Connect to Database
-connectDB();
 
 // API Routes
 app.use('/api/auth', authRoutes);
