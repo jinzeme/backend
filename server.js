@@ -3,9 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { Server } from 'socket.io';
-import https from 'https';
-import fs from 'fs';
-import jwt from 'jsonwebtoken'; // ✅ Correct
+import http from 'http'; // ✅ Required for correct Socket.io setup
+import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 
 import authRoutes from './routes/auth.js';
@@ -23,13 +22,6 @@ app.use(express.json());
 app.use(helmet());
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
 
-// Initialize Socket.io
-const io = new Server(server, {
-  cors: {
-    origin: '*',
-  },
-});
-
 // Connect to Database
 connectDB();
 
@@ -40,7 +32,17 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/follows', followRoutes);
 
-// ✅ Correct Socket.io Authentication Middleware
+// ✅ Create HTTP server to integrate with Socket.io
+const httpServer = http.createServer(app);
+
+// ✅ Initialize Socket.io
+const io = new Server(httpServer, {
+  cors: {
+    origin: '*',
+  },
+});
+
+// ✅ Socket.io Authentication Middleware
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('Authentication error'));
@@ -54,7 +56,7 @@ io.use((socket, next) => {
   }
 });
 
-// Socket.io Real-Time Messaging
+// ✅ Socket.io Real-Time Messaging
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.user.username);
 
@@ -67,6 +69,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start the Server
+// ✅ Start the HTTP Server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
