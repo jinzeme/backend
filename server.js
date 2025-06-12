@@ -3,9 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { Server } from 'socket.io';
-import https from 'https';
-import fs from 'fs';
-import jwt from 'jsonwebtoken'; // ✅ Correct
+import http from 'http'; // ✅ Required for correct Socket.io setup
+import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 
 import authRoutes from './routes/auth.js';
@@ -13,7 +12,7 @@ import userRoutes from './routes/users.js';
 import messageRoutes from './routes/messages.js';
 import postRoutes from './routes/posts.js';
 import followRoutes from './routes/follows.js';
-import connectDB from './config/db.js';
+import db from './config/db.js';
 
 dotenv.config();
 
@@ -23,25 +22,6 @@ app.use(express.json());
 app.use(helmet());
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
 
-// SSL Certificate Files
-const httpsOptions = {
-  key: fs.readFileSync('C:/server1/htdocs/jinze/certs/localhost.key'),
-  cert: fs.readFileSync('C:/server1/htdocs/jinze/certs/localhost.crt')
-};
-
-// Create HTTPS Server
-const server = https.createServer(httpsOptions, app);
-
-// Initialize Socket.io
-const io = new Server(server, {
-  cors: {
-    origin: '*',
-  },
-});
-
-// Connect to Database
-connectDB();
-
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -49,7 +29,28 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/follows', followRoutes);
 
-// ✅ Correct Socket.io Authentication Middleware
+// ✅ Test MySQL connection
+db.getConnection()
+  .then((connection) => {
+    console.log('✅ MySQL Connected Successfully');
+    connection.release(); // Release connection to the pool
+  })
+  .catch((err) => {
+    console.error('❌ MySQL Connection Error:', err.message);
+    process.exit(1); // Exit server if DB connection fails
+  });
+
+// ✅ Create HTTP server to integrate with Socket.io
+const httpServer = http.createServer(app);
+
+// ✅ Initialize Socket.io
+const io = new Server(httpServer, {
+  cors: {
+    origin: '*',
+  },
+});
+
+// ✅ Socket.io Authentication Middleware
 io.use((socket, next) => {
   const token = socket.handshake.auth.token;
   if (!token) return next(new Error('Authentication error'));
@@ -63,7 +64,7 @@ io.use((socket, next) => {
   }
 });
 
-// Socket.io Real-Time Messaging
+// ✅ Socket.io Real-Time Messaging
 io.on('connection', (socket) => {
   console.log('New client connected:', socket.user.username);
 
@@ -76,6 +77,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Start the Server
+// ✅ Start the HTTP Server
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Secure server running on port ${PORT}`));
+httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
